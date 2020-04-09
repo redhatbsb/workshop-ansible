@@ -1,0 +1,69 @@
+- hosts: all
+  become: yes
+  tasks:
+  - name: Instala pacotes essenciais
+    yum:
+     name: "{{ item }}"
+     state: present
+    with_items:
+      - wget
+      - java-11-openjdk-devel
+
+  - name: Adiciona grupo tomcat
+    group:
+      name: tomcat 
+      state: present
+
+  - name: Adiciona usuario tomcat
+    user:
+      name: tomcat 
+      group: tomcat 
+      state: present
+      system: yes
+
+  - name: Download Tomcat
+    get_url:
+      url: https://archive.apache.org/dist/tomcat/tomcat-9/v9.0.30/bin/apache-tomcat-9.0.30.tar.gz
+      dest: /tmp/apache-tomcat-9.0.30.tar.gz
+      mode: '0440'
+
+  - name: Remove lixos anteriores se houver
+    shell:  "rm -rf /usr/share/apache-tomcat-9.0.30 && rm -f /usr/share/tomcat"
+  - name: Descompacta em /usr/share
+    shell: "cd /tmp && tar -zxvf /tmp/apache-tomcat-9.0.30.tar.gz && mv apache-tomcat-9.0.30/ /usr/share/"
+
+  - name: Link simbolico
+    shell: "ln -s /usr/share/apache-tomcat-9.0.30 /usr/share/tomcat"
+    ignore_errors: yes
+
+  - name: Change file ownership, group and permissions
+    file:
+      path: /usr/share/tomcat
+      owner: tomcat
+      group: tomcat
+
+  - name: Change file ownership, group and permissions
+    file:
+      path: /usr/share/apache-tomcat-9.0.30
+      owner: tomcat
+      group: tomcat
+      state: directory
+      recurse: yes
+
+  - name: Copia arquivo de servico
+    copy:
+      src: "{{ playbook_dir }}/tomcat.service"
+      dest: /etc/systemd/system/tomcat.service
+
+  - name: Daemon-reload
+    shell: "sudo systemctl daemon-reload"
+
+  - name: Desabilita SeLinux
+    selinux:
+      state: disabled
+
+  - name: Inicia servico
+    service:
+     name: tomcat
+     state: started
+     enabled: yes

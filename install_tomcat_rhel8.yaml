@@ -67,3 +67,6 @@
      name: tomcat
      state: started
      enabled: yes
+
+   - name: Linka webapps
+     shell: "mv /usr/share/tomcat/webapps /usr/share/tomcat/webapps-old && ln -s /var/lib/tomcat/webapps /usr/share/tomcat/webapps"
